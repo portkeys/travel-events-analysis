@@ -166,9 +166,11 @@ def generate():
 
     geocache = load_geocache()
 
-    # Date range from actual data
-    min_date = df["timestamp"].min().date()
-    max_date = df["timestamp"].max().date()
+    # Date range from cached parquet files (not event timestamps, which can
+    # include late-arriving events from earlier dates)
+    parquet_dates = sorted(f.stem for f in CACHE_DIR.glob("*.parquet"))
+    min_date = parquet_dates[0] if parquet_dates else str(df["timestamp"].min().date())
+    max_date = parquet_dates[-1] if parquet_dates else str(df["timestamp"].max().date())
 
     # -----------------------------------------------------------------------
     # 1. Audience Overview
