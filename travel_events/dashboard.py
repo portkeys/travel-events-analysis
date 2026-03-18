@@ -154,6 +154,9 @@ df = _load_cached_range(start_date, end_date)
 # Guard against "None" strings from Parquet cache coercion
 if "user_id" in df.columns:
     df.loc[df["user_id"].isin(["None", "none", ""]), "user_id"] = None
+    # Remove internal users (Outside Inc. and Tenex employees)
+    internal_mask = df["user_id"].str.contains(r"@outsideinc\.com|@tenex\.co", na=False)
+    df.loc[internal_mask, "user_id"] = None
 
 # Fill missing utm_source from referring_domain so direct/travel-site traffic
 # appears in UTM charts. Without this, all events with utm_source=None (including
@@ -249,15 +252,20 @@ fig_comp = go.Figure(go.Pie(
     sort=False,
     direction="clockwise",
 ))
-# Annotation with arrow pointing to the registered slice location on the pie
+# Annotation with arrow pointing to the registered slice.
+# The registered slice is tiny and pulled out, sitting at the boundary between
+# the two larger slices. In Plotly pie coords, the pie center is (0.5, 0.5).
+# With clockwise direction and no sort, slices go: Single-Visit (large grey),
+# Repeat Anonymous (small dark), Registered (tiny yellow, pulled out).
+# The registered slice sits roughly at the 12 o'clock position (top of pie).
 fig_comp.add_annotation(
     text=f"<b>Registered: {registered_count:,} ({reg_pct:.2f}%)</b>",
-    x=0.58, y=0.52,  # near the tiny registered slice at the top of the pie
+    x=0.52, y=1.0,  # top of pie where the tiny registered slice is
     showarrow=True,
     arrowhead=2,
     arrowwidth=2,
     arrowcolor=COLORS["black"],
-    ax=120, ay=-80,  # offset the label box to upper-right
+    ax=80, ay=30,  # label box offset to upper-right
     font=dict(size=13, color=COLORS["black"]),
     bgcolor=COLORS["primary"],
     bordercolor=COLORS["black"],
@@ -338,90 +346,6 @@ if high_vol_cols:
     )
     st.plotly_chart(fig_high, use_container_width=True)
 
-# Low-volume: heatmap — best for sparse data with many event types
-visible_low = [c for c in low_vol_cols if daily[c].sum() >= 5]
-minor_low = [c for c in low_vol_cols if daily[c].sum() < 5]
-if visible_low:
-    st.subheader("Engagement Events Heatmap")
-    st.markdown("Each cell shows the event count for that day. Darker = more events. Instantly spot which days had activity and what kind.")
-
-    heat_data = daily[visible_low].copy()
-    # Sort event types by total count (most active on top)
-    col_order = sorted(visible_low, key=lambda c: heat_data[c].sum(), reverse=True)
-    heat_data = heat_data[col_order]
-
-    # Date labels for x-axis
-    date_labels = [d.strftime("%m/%d") for d in heat_data.index]
-
-    fig_heat = go.Figure(go.Heatmap(
-        z=heat_data.T.values,
-        x=date_labels,
-        y=col_order,
-        text=heat_data.T.values,
-        texttemplate="%{text}",
-        textfont=dict(size=10),
-        colorscale=[
-            [0.0, "#F7F7F7"],      # zero = light bg
-            [0.01, "#FFF3B0"],     # low = pale yellow
-            [0.3, "#FFD100"],      # medium = Outside yellow
-            [0.7, "#E6BC00"],      # high = dark gold
-            [1.0, "#000000"],      # max = black
-        ],
-        showscale=True,
-        colorbar=dict(title="Events"),
-        hoverongaps=False,
-    ))
-    fig_heat.update_layout(
-        height=max(250, len(col_order) * 40 + 80),
-        margin=dict(l=0, r=0, t=10, b=0),
-        xaxis=dict(title="", tickangle=-45, dtick=1),
-        yaxis=dict(title="", autorange="reversed"),
-    )
-    st.plotly_chart(fig_heat, use_container_width=True)
-    if minor_low:
-        st.caption(f"Not shown (< 5 events): {', '.join(minor_low)}")
-
-    # --- Interpretive guidance ---
-    total_days = len(heat_data)
-    search_total = int(heat_data.get("Travel Searched", pd.Series([0])).sum())
-    search_days = int((heat_data.get("Travel Searched", pd.Series([0])) > 0).sum())
-    click_total = int(heat_data.get("Embed Widget Clicked", pd.Series([0])).sum())
-    noavail_total = int(heat_data.get("No Availability Viewed", pd.Series([0])).sum())
-    cart_total = int(heat_data.get("Property Added to Cart", pd.Series([0])).sum())
-    checkout_total = int(heat_data.get("Checkout Clicked", pd.Series([0])).sum())
-
-    st.markdown("#### How to read this heatmap")
-    st.markdown(
-        f"""
-**Reading the chart:** Each row is an event type, each column is a day. A dark cell means
-more events that day; a light/white cell means zero. Look for vertical columns of activity
-(a day with multiple event types firing = a high-intent user session) and horizontal patterns
-(which event types are consistently active vs. sporadic).
-
-**What the data tells us:**
-
-- **Travel Searched** ({search_total} total across {search_days}/{total_days} days) is the strongest
-  intent signal. These users actively looked for lodging. However, searches only happen on
-  {search_days} out of {total_days} days — meaning most days have zero search activity.
-  This is low and suggests the widget isn't surfacing the search experience effectively to most visitors.
-
-- **No Availability Viewed** ({noavail_total} total) means users searched but found nothing available.
-  Each of these is a lost booking opportunity. Consider expanding inventory for popular dates/destinations
-  or showing alternative properties when availability is empty.
-
-- **Property Added to Cart** ({cart_total}) and **Checkout Clicked** ({checkout_total}) are the
-  highest-value events. When these cluster on the same days as searches, it indicates a healthy
-  session where users move through the full funnel. Days with searches but no cart adds suggest
-  pricing, availability, or UX friction.
-
-- **Embed Widget Clicked** ({click_total} total) is relatively low compared to widget views
-  (60K+). The click-through rate is ~0.05%, well below industry benchmarks: travel display ads
-  average **0.47% CTR**, and even programmatic display averages **0.1%**. Personalized CTAs convert
-  **202% better** than generic ones (HubSpot, 330K+ CTAs studied). Getting from 0.05% to the
-  travel display average of 0.47% would mean ~280 clicks instead of {click_total} — a **10x improvement**
-  from the same traffic. Prioritize A/B testing widget headline, CTA copy, and page placement.
-"""
-    )
 
 
 # ============================================================
@@ -976,7 +900,7 @@ with col_s1:
         color="#FFD100",
         title="Capture Repeat Anonymous Users",
         description=f"{repeat_anon:,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
-        items="<li><b>Price-drop alerts:</b> &quot;Get notified when prices drop for Aspen lodging&quot; — requires email. Show after a search.</li><li><b>2nd-visit registration nudge:</b> Detect returning visitors and show a prompt: &quot;Save your search and get exclusive deals.&quot;</li>",
+        items="<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: &quot;Create an account for exclusive travel deals.&quot;</li><li><b>Email capture via content:</b> Offer trip planning checklists, packing guides, or destination newsletters in exchange for email sign-up.</li>",
     ), unsafe_allow_html=True)
 
 with col_s2:

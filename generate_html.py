@@ -73,6 +73,9 @@ def apply_transforms(df: pd.DataFrame) -> pd.DataFrame:
     # Guard against "None" strings from Parquet cache coercion
     if "user_id" in df.columns:
         df.loc[df["user_id"].isin(["None", "none", ""]), "user_id"] = None
+        # Remove internal users (Outside Inc. and Tenex employees)
+        internal_mask = df["user_id"].str.contains(r"@outsideinc\.com|@tenex\.co", na=False)
+        df.loc[internal_mask, "user_id"] = None
 
     # Fill missing utm_source from referring_domain
     _REFERRER_TO_SOURCE = {
@@ -227,9 +230,9 @@ def generate():
     ))
     fig_comp.add_annotation(
         text=f"<b>Registered: {registered_count:,} ({reg_pct:.2f}%)</b>",
-        x=0.58, y=0.52,
+        x=0.52, y=1.0,
         showarrow=True, arrowhead=2, arrowwidth=2, arrowcolor=COLORS["black"],
-        ax=120, ay=-80,
+        ax=80, ay=30,
         font=dict(size=13, color=COLORS["black"]),
         bgcolor=COLORS["primary"], bordercolor=COLORS["black"],
         borderwidth=1, borderpad=6,
@@ -293,80 +296,8 @@ def generate():
         high_vol_html = fig_to_html(fig_high)
 
     # Heatmap
-    visible_low = [c for c in low_vol_cols if daily[c].sum() >= 5]
-    minor_low = [c for c in low_vol_cols if daily[c].sum() < 5]
-    heatmap_html = ""
-    heatmap_guidance = ""
-    minor_caption = ""
-    if visible_low:
-        heat_data = daily[visible_low].copy()
-        col_order = sorted(visible_low, key=lambda c: heat_data[c].sum(), reverse=True)
-        heat_data = heat_data[col_order]
-        date_labels = [d.strftime("%m/%d") for d in heat_data.index]
-
-        fig_heat = go.Figure(go.Heatmap(
-            z=heat_data.T.values,
-            x=date_labels, y=col_order,
-            text=heat_data.T.values,
-            texttemplate="%{text}",
-            textfont=dict(size=10),
-            colorscale=[
-                [0.0, "#F7F7F7"], [0.01, "#FFF3B0"],
-                [0.3, "#FFD100"], [0.7, "#E6BC00"], [1.0, "#000000"],
-            ],
-            showscale=True, colorbar=dict(title="Events"),
-            hoverongaps=False,
-        ))
-        fig_heat.update_layout(
-            height=max(250, len(col_order) * 40 + 80),
-            margin=dict(l=0, r=0, t=10, b=0),
-            xaxis=dict(title="", tickangle=-45, dtick=1),
-            yaxis=dict(title="", autorange="reversed"),
-        )
-        heatmap_html = fig_to_html(fig_heat)
-        if minor_low:
-            minor_caption = f'<p class="caption">Not shown (&lt; 5 events): {", ".join(minor_low)}</p>'
-
-        # Interpretive guidance
-        total_days = len(heat_data)
-        search_total = int(heat_data.get("Travel Searched", pd.Series([0])).sum())
-        search_days = int((heat_data.get("Travel Searched", pd.Series([0])) > 0).sum())
-        click_total = int(heat_data.get("Embed Widget Clicked", pd.Series([0])).sum())
-        noavail_total = int(heat_data.get("No Availability Viewed", pd.Series([0])).sum())
-        cart_total = int(heat_data.get("Property Added to Cart", pd.Series([0])).sum())
-        checkout_total = int(heat_data.get("Checkout Clicked", pd.Series([0])).sum())
-
-        heatmap_guidance = f"""
-<h4>How to read this heatmap</h4>
-<p><strong>Reading the chart:</strong> Each row is an event type, each column is a day. A dark cell means
-more events that day; a light/white cell means zero. Look for vertical columns of activity
-(a day with multiple event types firing = a high-intent user session) and horizontal patterns
-(which event types are consistently active vs. sporadic).</p>
-
-<p><strong>What the data tells us:</strong></p>
-<ul>
-<li><strong>Travel Searched</strong> ({search_total} total across {search_days}/{total_days} days) is the strongest
-intent signal. These users actively looked for lodging. However, searches only happen on
-{search_days} out of {total_days} days -- meaning most days have zero search activity.
-This is low and suggests the widget isn't surfacing the search experience effectively to most visitors.</li>
-
-<li><strong>No Availability Viewed</strong> ({noavail_total} total) means users searched but found nothing available.
-Each of these is a lost booking opportunity. Consider expanding inventory for popular dates/destinations
-or showing alternative properties when availability is empty.</li>
-
-<li><strong>Property Added to Cart</strong> ({cart_total}) and <strong>Checkout Clicked</strong> ({checkout_total}) are the
-highest-value events. When these cluster on the same days as searches, it indicates a healthy
-session where users move through the full funnel. Days with searches but no cart adds suggest
-pricing, availability, or UX friction.</li>
-
-<li><strong>Embed Widget Clicked</strong> ({click_total} total) is relatively low compared to widget views
-(60K+). The click-through rate is ~0.05%, well below industry benchmarks: travel display ads
-average <strong>0.47% CTR</strong>, and even programmatic display averages <strong>0.1%</strong>. Personalized CTAs convert
-<strong>202% better</strong> than generic ones (HubSpot, 330K+ CTAs studied). Getting from 0.05% to the
-travel display average of 0.47% would mean ~280 clicks instead of {click_total} -- a <strong>10x improvement</strong>
-from the same traffic. Prioritize A/B testing widget headline, CTA copy, and page placement.</li>
-</ul>
-"""
+    # Heatmap removed — without tied-in external events, the daily breakdown
+    # creates noise rather than actionable insight for stakeholders.
 
     # -----------------------------------------------------------------------
     # 4. Conversion Funnel
@@ -813,7 +744,7 @@ just not identified on the travel site yet.</p>
         "#FFD100",
         "Capture Repeat Anonymous Users",
         f"{repeat_anon:,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
-        '<li><b>Price-drop alerts:</b> "Get notified when prices drop for Aspen lodging" -- requires email. Show after a search.</li><li><b>2nd-visit registration nudge:</b> Detect returning visitors and show a prompt: "Save your search and get exclusive deals."</li>',
+        '<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: "Create an account for exclusive travel deals."</li><li><b>Email capture via content:</b> Offer trip planning checklists, packing guides, or destination newsletters in exchange for email sign-up.</li>',
     )}</div>
     <div>{strategy_card(
         "#E6BC00",
@@ -1050,10 +981,6 @@ just not identified on the travel site yet.</p>
 <!-- ============================================================ -->
 <h2>Daily Event Trend</h2>
 {"<h3>Page Loads vs Widget Views</h3><div class='chart-container'>" + high_vol_html + "</div>" if high_vol_html else ""}
-
-{"<h3>Engagement Events Heatmap</h3><p>Each cell shows the event count for that day. Darker = more events. Instantly spot which days had activity and what kind.</p><div class='chart-container'>" + heatmap_html + "</div>" + minor_caption if heatmap_html else ""}
-
-{heatmap_guidance}
 
 <!-- ============================================================ -->
 <!-- 4. Conversion Funnel -->
