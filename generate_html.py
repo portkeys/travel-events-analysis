@@ -525,7 +525,7 @@ def generate():
                     color="events",
                     color_continuous_scale=[[0, "#FFF3B0"], [0.5, "#FFD100"], [1, "#000000"]],
                     size_max=35, scope="north america",
-                    title="Where is ad traffic targeting?",
+                    title="Where are AREG events taking place?",
                 )
                 fig_loc_map.update_geos(
                     showland=True, landcolor="#F0F0F0",
@@ -953,7 +953,7 @@ just not identified on the travel site yet.</p>
 <p>These "Lodging Near ..." terms come from users who registered for marathons, cycling races, or ski events on AREG sites. The locations reflect where those events take place — a strong signal for where to target lodging campaigns.</p>
 {"<div class='chart-container'>" + utm_terms_bar_html + "</div>" if utm_terms_bar_html else "<p>No UTM terms found in this date range.</p>"}
 {"<div class='collapsible-header' onclick='toggleCollapsible(this)'>UTM terms table</div><div class='collapsible-content'>" + utm_terms_table_html + "</div>" if utm_terms_table_html else ""}
-{"<h3>UTM Term Locations Map</h3><p>Geographic distribution of AREG event locations where registrants are being shown lodging ads.</p><div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else ""}
+{"<h3>UTM Term Locations Map</h3><p>Geographic distribution of AREG event locations where registrants are being shown the travel widget.</p><div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else ""}
 
 <div style="margin-top:24px;">{strategy_card(
     "#E6BC00",
@@ -976,7 +976,7 @@ just not identified on the travel site yet.</p>
         "#FFD100",
         "Action: Capture Repeat Anonymous Users",
         f"{repeat_anon:,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
-        '<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: "Create an account for exclusive travel deals."</li><li><b>Email capture via content:</b> Offer trip planning checklists, packing guides, or destination newsletters in exchange for email sign-up.</li>',
+        '<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: "Create an account for exclusive travel deals."</li><li><b>Email capture via lead magnet:</b> Offer destination guides, trip planning checklists, or event travel newsletters gated behind email sign-up.</li>',
     )}</div>
     <div>{strategy_card(
         "#333333",
@@ -992,6 +992,13 @@ just not identified on the travel site yet.</p>
 <h2>Registered Users</h2>
 <p>All registered users (with <code>user_id</code>) who engaged with the travel widget.</p>
 {"<div class='kpi-grid'>" + kpi_card("Registered Users", f"{reg_user_count:,}") + "</div>" + reg_table_html if reg_table_html else "<p>No registered users found in this date range.</p>"}
+
+<div style="margin-top:24px;">{strategy_card(
+    "#E6BC00",
+    "Action: Identify Registered Users with Travel Intent",
+    f"Only {reg_user_count} registered users engaged with the travel widget organically. Relying on article traffic alone won't scale. Instead, proactively identify registered users across the Outside ecosystem who show travel intent, and reach them via email campaigns.",
+    '<li><b>AREG event registrants:</b> users who registered for marathons, cycling, or ski events — they travel for their sport and need lodging</li><li><b>Travel content readers:</b> Outside editorial subscribers who engage with travel, destination, or adventure articles</li><li><b>Trailforks/Gaia users with saved non-home locations:</b> users who saved trails or regions outside their home area — a strong signal they plan to travel there</li><li><b>Outside+ subscribers with outdoor travel affinity:</b> premium members who engage with trip planning or gear review content</li>',
+)}</div>
 
 </div><!-- .container -->
 
