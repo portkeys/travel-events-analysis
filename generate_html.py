@@ -190,15 +190,9 @@ def generate():
 
     kpi_row1 = "".join([
         kpi_card("Total Events", f"{len(df):,}"),
-        kpi_card("Unique Event Types", f"{df['event'].nunique()}"),
         kpi_card("Unique Users", f"{total_unique:,}"),
         kpi_card("Registered Users", f"{registered_count:,}"),
-    ])
-    kpi_row2 = "".join([
         kpi_card("Anonymous Users", f"{anon_count:,}"),
-        kpi_card("Single-Visit Anon.", f"{single_visit_anon:,}"),
-        kpi_card("Repeat Anonymous", f"{repeat_anon:,}"),
-        kpi_card("Repeat Rate", f"{repeat_pct:.1f}%"),
     ])
 
     # -----------------------------------------------------------------------
@@ -228,15 +222,6 @@ def generate():
         sort=False,
         direction="clockwise",
     ))
-    fig_comp.add_annotation(
-        text=f"<b>Registered: {registered_count:,} ({reg_pct:.2f}%)</b>",
-        x=0.52, y=1.0,
-        showarrow=True, arrowhead=2, arrowwidth=2, arrowcolor=COLORS["black"],
-        ax=80, ay=30,
-        font=dict(size=13, color=COLORS["black"]),
-        bgcolor=COLORS["primary"], bordercolor=COLORS["black"],
-        borderwidth=1, borderpad=6,
-    )
     fig_comp.update_layout(height=400, margin=dict(l=40, r=40, t=30, b=30), showlegend=False)
     comp_html = fig_to_html(fig_comp)
 
@@ -269,35 +254,9 @@ def generate():
     events_html = fig_to_html(fig_events)
     events_table_html = df_to_html_table(summary)
 
-    # -----------------------------------------------------------------------
-    # 3. Daily Event Trend
-    # -----------------------------------------------------------------------
-    daily = daily_event_counts(df)
-
-    high_vol_cols = [c for c in ["Loaded a Page", "Embed Widget Viewed"] if c in daily.columns]
-    low_vol_cols = [c for c in daily.columns if c not in high_vol_cols and daily[c].sum() > 0]
-
-    high_vol_html = ""
-    if high_vol_cols:
-        fig_high = go.Figure()
-        high_colors = [COLORS["light_grey"], COLORS["primary"]]
-        for i, col in enumerate(high_vol_cols):
-            fig_high.add_trace(go.Scatter(
-                x=daily.index, y=daily[col],
-                name=col, mode="lines",
-                line=dict(color=high_colors[i], width=2),
-            ))
-        fig_high.update_layout(
-            height=350, hovermode="x unified",
-            yaxis_title="Events", xaxis_title="",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            margin=dict(l=0, r=0, t=30, b=0),
-        )
-        high_vol_html = fig_to_html(fig_high)
-
-    # Heatmap
-    # Heatmap removed — without tied-in external events, the daily breakdown
-    # creates noise rather than actionable insight for stakeholders.
+    # Daily Event Trend and Heatmap removed — Page Loads vs Widget Views
+    # shows near-identical lines with no actionable insight, and the heatmap
+    # without tied-in external events creates noise for stakeholders.
 
     # -----------------------------------------------------------------------
     # 4. Conversion Funnel
@@ -648,7 +607,7 @@ def generate():
             )
             funnel_steps_html = f"""
 <h3>Repeat Anonymous Users by Deepest Funnel Step</h3>
-<p>Where do your most engaged anonymous users stop in the funnel?</p>
+<p>Where do our most engaged anonymous users stop in the funnel?</p>
 {fig_to_html(fig_steps)}
 """
 
@@ -712,7 +671,7 @@ just not identified on the travel site yet.</p>
 {fig_to_html(fig_src)}
 """
 
-        # Repeat anonymous table
+        # Repeat anonymous table (collapsible)
         repeat_table_html = ""
         if not repeat_engaged.empty:
             display_cols = [
@@ -722,8 +681,8 @@ just not identified on the travel site yet.</p>
                 if c in repeat_engaged.columns
             ]
             repeat_table_html = f"""
-<h3>Repeat Anonymous Users (Top 50)</h3>
-{df_to_html_table(repeat_engaged[display_cols], max_rows=50)}
+<div class="collapsible-header" onclick="toggleCollapsible(this)">Repeat Anonymous Users (Top 50)</div>
+<div class="collapsible-content">{df_to_html_table(repeat_engaged[display_cols], max_rows=50)}</div>
 """
 
         anon_analysis_html = f"""
@@ -739,34 +698,7 @@ just not identified on the travel site yet.</p>
     # -----------------------------------------------------------------------
     top_dest_label = top_dest_name if top_dest_name else "top destinations"
 
-    strategy_cards = f"""<div class="two-col" style="margin-bottom:20px;">
-    <div>{strategy_card(
-        "#FFD100",
-        "Capture Repeat Anonymous Users",
-        f"{repeat_anon:,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
-        '<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: "Create an account for exclusive travel deals."</li><li><b>Email capture via content:</b> Offer trip planning checklists, packing guides, or destination newsletters in exchange for email sign-up.</li>',
-    )}</div>
-    <div>{strategy_card(
-        "#E6BC00",
-        "Destination-Targeted Lead Magnets",
-        f'Searches concentrate on a few destinations (e.g., {top_dest_label}). Use proven demand to capture emails.',
-        '<li><b>Destination guides:</b> "Download our insider guide to skiing in Banff" -- gated behind email. Create guides for top-searched destinations.</li><li>Create dedicated landing pages for top-searched destinations</li><li>Run email campaigns with deals for these locations</li>',
-    )}</div>
-</div>
-<div class="two-col">
-    <div>{strategy_card(
-        "#000000",
-        "Optimize the Widget CTR",
-        "Widget CTR is 0.05% vs. 0.47% travel industry average. Even small improvements at 60K+ views would have outsized impact.",
-        '<li>A/B test widget headline, CTA copy, and page placement</li><li>Add social proof (e.g., "12 people searched Aspen today")</li>',
-    )}</div>
-    <div>{strategy_card(
-        "#333333",
-        "Cross-Site Identity Resolution",
-        "Most repeat anonymous users come from BikeReg and SkiReg where they may already be registered. Stitch identities to unlock email-addressable audiences.",
-        '<li>Investigate RudderStack Profiles to merge anonymous_id with sister site registrations</li><li>Cross-reference AREG user databases (BikeReg, SkiReg, RunReg, TriReg) with travel widget impression data</li>',
-    )}</div>
-</div>"""
+    # Strategy cards are now inline within each Key Insight section above.
 
     # -----------------------------------------------------------------------
     # Assemble full HTML
@@ -958,86 +890,108 @@ just not identified on the travel site yet.</p>
 <p class="subtitle">Showing data from <strong>{min_date}</strong> to <strong>{max_date}</strong> ({len(df):,} events)</p>
 
 <!-- ============================================================ -->
-<!-- 1. Audience Overview -->
+<!-- Audience Overview -->
 <!-- ============================================================ -->
 <h2>Audience Overview</h2>
+
 <div class="kpi-grid">{kpi_row1}</div>
-<div class="kpi-grid">{kpi_row2}</div>
 
 <h3>User Composition</h3>
-{"<p><strong>" + f"{repeat_anon:,} repeat anonymous users</strong> visited multiple times without registering -- these represent your best activation opportunity.</p>" if repeat_anon > 0 else ""}
+{"<p><strong>" + f"{repeat_anon:,} repeat anonymous users</strong> visited multiple times without registering -- these represent our best activation opportunity.</p>" if repeat_anon > 0 else ""}
 <div class="chart-container">{comp_html}</div>
 
 <!-- ============================================================ -->
-<!-- 2. Event Summary -->
+<!-- Key Insight #1: Massive Reach, Minimal Conversion -->
 <!-- ============================================================ -->
-<h2>Event Summary</h2>
+<h2>Key Insight #1: Massive Reach, Minimal Conversion</h2>
+
+<h3>Event Summary</h3>
 <div class="chart-container">{events_html}</div>
 <div class="collapsible-header" onclick="toggleCollapsible(this)">Event breakdown table</div>
 <div class="collapsible-content">{events_table_html}</div>
 
-<!-- ============================================================ -->
-<!-- 3. Daily Event Trend -->
-<!-- ============================================================ -->
-<h2>Daily Event Trend</h2>
-{"<h3>Page Loads vs Widget Views</h3><div class='chart-container'>" + high_vol_html + "</div>" if high_vol_html else ""}
-
-<!-- ============================================================ -->
-<!-- 4. Conversion Funnel -->
-<!-- ============================================================ -->
-<h2>Conversion Funnel</h2>
-{"<p>Separated by user type so registered users are visible on their own scale.</p>" + funnel_html if funnel_html else "<p>No funnel data available.</p>"}
+<h3>Conversion Funnel</h3>
+<p>Separated by user type so registered users are visible on their own scale.</p>
+{funnel_html if funnel_html else "<p>No funnel data available.</p>"}
 {"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Funnel data table</div><div class='collapsible-content'>" + funnel_table_html + "</div>" if funnel_table_html else ""}
 
-<!-- ============================================================ -->
-<!-- 5. UTM Performance -->
-<!-- ============================================================ -->
-<h2>UTM Performance</h2>
-{"<h3>Traffic Volume by UTM Source</h3><p>Page loads &amp; widget views (left) vs. widget clicks (right) -- separate scales so low-volume clicks are visible.</p>" + utm_volume_html if utm_volume_html else ""}
+<div style="margin-top:24px;">{strategy_card(
+    "#000000",
+    "Action: Optimize the Widget CTR",
+    "Widget CTR is 0.05% vs. 0.47% travel industry average. Even small improvements at 60K+ views would have outsized impact.",
+    '<li>A/B test widget headline, CTA copy, and page placement</li><li>Add social proof (e.g., "12 people searched Aspen today")</li>',
+)}</div>
 
-{"<h3>Conversion Rates by UTM Source (Ranked)</h3><p><strong>View Rate</strong> = widget views / page loads (did users scroll to the widget?). <strong>Click Rate</strong> = clicks / widget views (of those who saw it, who clicked?). <strong>Search Rate</strong> = searches / page loads (search is a separate action from the widget).</p>" + utm_rates_html if utm_rates_html else ""}
+<!-- ============================================================ -->
+<!-- Key Insight #2: Top Traffic from AREG Sites -->
+<!-- ============================================================ -->
+<h2>Key Insight #2: Top Traffic from AREG Sites</h2>
+
+{"<h3>Traffic Volume by UTM Source</h3><p>BikeReg dominates traffic volume. The right panel shows widget clicks on a separate scale -- most sources drive fewer than 10 clicks despite thousands of impressions.</p>" + utm_volume_html if utm_volume_html else ""}
+
+{"<h3>Conversion Rates by UTM Source (Ranked)</h3><p><strong>View Rate</strong> = widget views / page loads (did users scroll to the widget?).<br><strong>Click Rate</strong> = clicks / widget views (of those who saw it, who clicked?).<br><strong>Search Rate</strong> = searches / page loads (search is a separate action from the widget).</p>" + utm_rates_html if utm_rates_html else ""}
 
 {"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Full UTM breakdown table</div><div class='collapsible-content'>" + utm_table_html + "</div>" if utm_table_html else ""}
 
 <!-- ============================================================ -->
-<!-- 6. Top Search Destinations -->
+<!-- Top Search Destinations -->
 <!-- ============================================================ -->
 <h2>Top Search Destinations</h2>
+
+<h3>Selectable Inventory Destinations</h3>
+<p>These are locations from our selectable inventory, not free-text searches. They indicate which destinations users explore when presented with options.</p>
 {"<div class='chart-container'>" + dest_bar_html + "</div>" if dest_bar_html else "<p>No search destination data.</p>"}
 {"<div class='chart-container'>" + dest_map_html + "</div>" if dest_map_html else ""}
 {"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Search destinations table</div><div class='collapsible-content'>" + dest_table_html + "</div>" if dest_table_html else ""}
 
 <!-- ============================================================ -->
-<!-- 7. Top UTM Terms -->
+<!-- Key Insight #3: Location Signals from AREG Event Registrations -->
 <!-- ============================================================ -->
-<h2>Top UTM Terms</h2>
+<h2>Key Insight #3: Location Signals from AREG Event Registrations</h2>
+
+<h3>UTM Term Locations — Where AREG Events Take Place</h3>
+<p>These "Lodging Near ..." terms come from users who registered for marathons, cycling races, or ski events on AREG sites. The locations reflect where those events take place — a strong signal for where to target lodging campaigns.</p>
 {"<div class='chart-container'>" + utm_terms_bar_html + "</div>" if utm_terms_bar_html else "<p>No UTM terms found in this date range.</p>"}
 {"<div class='collapsible-header' onclick='toggleCollapsible(this)'>UTM terms table</div><div class='collapsible-content'>" + utm_terms_table_html + "</div>" if utm_terms_table_html else ""}
+{"<h3>UTM Term Locations Map</h3><p>Geographic distribution of AREG event locations where registrants are being shown lodging ads.</p><div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else ""}
 
-{"<h3>UTM Term Locations Map</h3><p>Locations extracted from &quot;Lodging Near ...&quot; UTM terms -- shows where ad traffic is targeting.</p><div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else ""}
+<div style="margin-top:24px;">{strategy_card(
+    "#E6BC00",
+    "Action: Location-Based Campaigns",
+    "UTM term locations reveal where AREG events take place. Target lodging campaigns around these event locations to reach registrants who need accommodation.",
+    '<li><b>Event-adjacent lodging:</b> target AREG registrants with lodging options near their upcoming event location</li><li>Create dedicated landing pages for top event locations</li><li>Run email campaigns with lodging deals timed to event dates</li>',
+)}</div>
 
 <!-- ============================================================ -->
-<!-- 8. Registered Users -->
+<!-- Key Insight #4: 2,800+ Repeat Anonymous Users -->
+<!-- ============================================================ -->
+<h2>Key Insight #4: We Have {repeat_anon:,}+ Repeat Anonymous Users!</h2>
+
+<p>Anonymous visitors segmented by engagement level.
+<strong>Repeat visitors who engaged with the widget are our best activation targets.</strong></p>
+{anon_analysis_html if anon_analysis_html else "<p>No engaged anonymous users found.</p>"}
+
+<div class="two-col" style="margin-top:24px;">
+    <div>{strategy_card(
+        "#FFD100",
+        "Action: Capture Repeat Anonymous Users",
+        f"{repeat_anon:,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
+        '<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: "Create an account for exclusive travel deals."</li><li><b>Email capture via content:</b> Offer trip planning checklists, packing guides, or destination newsletters in exchange for email sign-up.</li>',
+    )}</div>
+    <div>{strategy_card(
+        "#333333",
+        "Action: Cross-Site Identity Resolution",
+        "Most repeat anonymous users come from BikeReg and SkiReg where they may already be registered. Stitch identities to unlock email-addressable audiences.",
+        '<li>Investigate RudderStack Profiles to merge anonymous_id with sister site registrations</li><li>Cross-reference AREG user databases (BikeReg, SkiReg, RunReg, TriReg) with travel widget impression data</li>',
+    )}</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- Registered Users (Reference) -->
 <!-- ============================================================ -->
 <h2>Registered Users</h2>
 <p>All registered users (with <code>user_id</code>) who engaged with the travel widget.</p>
 {"<div class='kpi-grid'>" + kpi_card("Registered Users", f"{reg_user_count:,}") + "</div>" + reg_table_html if reg_table_html else "<p>No registered users found in this date range.</p>"}
-
-<!-- ============================================================ -->
-<!-- 9. Anonymous User Analysis -->
-<!-- ============================================================ -->
-<h2>Anonymous User Analysis</h2>
-<p>Anonymous visitors segmented by engagement level.
-<strong>Repeat visitors who engaged with the widget are your best activation targets.</strong></p>
-{anon_analysis_html if anon_analysis_html else "<p>No engaged anonymous users found.</p>"}
-
-<!-- ============================================================ -->
-<!-- 10. Activation Strategy -->
-<!-- ============================================================ -->
-<h2>Activation Strategy</h2>
-<p>Based on the data above, here are recommended strategies to convert
-anonymous visitors into registered users and drive deeper engagement.</p>
-{strategy_cards}
 
 </div><!-- .container -->
 
