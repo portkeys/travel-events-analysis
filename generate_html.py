@@ -997,7 +997,7 @@ just not identified on the travel site yet.</p>
     "#E6BC00",
     "Action: Identify Registered Users with Travel Intent",
     f"Only {reg_user_count} registered users engaged with the travel widget organically. Relying on article traffic alone won't scale. Instead, proactively identify registered users across the Outside ecosystem who show travel intent, and reach them via email campaigns.",
-    '<li><b>AREG event registrants:</b> users who registered for marathons, cycling, or ski events — they travel for their sport and need lodging</li><li><b>Travel content readers:</b> Outside editorial subscribers who engage with travel, destination, or adventure articles</li><li><b>Trailforks/Gaia users with saved non-home locations:</b> users who saved trails or regions outside their home area — a strong signal they plan to travel there</li><li><b>Outside+ subscribers with outdoor travel affinity:</b> premium members who engage with trip planning or gear review content</li>',
+    '<li><b>AREG event registrants:</b> users who registered for marathons, cycling, or ski events — they travel for their sport and need lodging</li><li><b>Travel content readers:</b> Outside editorial subscribers who engage with travel, destination, or adventure articles</li><li><b>Trailforks/Gaia users with saved non-home locations:</b> users who saved trails or regions outside their home area — a strong signal they plan to travel there</li><li><b>Outside+ subscribers:</b> premium members already have a paid relationship with the brand — higher trust and more likely to transact on travel</li>',
 )}</div>
 
 </div><!-- .container -->
