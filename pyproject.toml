@@ -1,0 +1,22 @@
+[project]
+name = "travel-events-analysis"
+version = "0.1.0"
+description = "Analysis of Outside Travel embed widget events from RudderStack/S3"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3",
+    "pandas",
+    "pyarrow",
+    "jupyter",
+    "matplotlib",
+    "seaborn",
+    "streamlit",
+    "plotly",
+    "geopy>=2.4.1",
+]
+
+[project.optional-dependencies]
+kafka = [
+    "confluent-kafka",
+    "faust-streaming",
+]
