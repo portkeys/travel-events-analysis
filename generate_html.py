@@ -294,6 +294,59 @@ def generate():
         funnel_table_html = df_to_html_table(funnel_df)
 
     # -----------------------------------------------------------------------
+    # 4b. A/B Widget Variant Analysis
+    # -----------------------------------------------------------------------
+    ab_html = ""
+    if "variant" in df.columns:
+        widget_views = df[df["event"] == "Embed Widget Viewed"]
+        widget_clicks = df[df["event"] == "Embed Widget Clicked"]
+        variant_views = widget_views.groupby("variant")["anonymous_id"].count()
+        variant_clicks = widget_clicks.groupby("variant")["anonymous_id"].count()
+        ab_rows = []
+        for v in ["a", "b"]:
+            views = int(variant_views.get(v, 0))
+            clicks = int(variant_clicks.get(v, 0))
+            ctr = clicks / views * 100 if views > 0 else 0
+            ab_rows.append({"Variant": v.upper(), "Widget Views": f"{views:,}", "Clicks": f"{clicks:,}", "CTR": f"{ctr:.3f}%"})
+        ab_df = pd.DataFrame(ab_rows)
+        ab_table = ab_df.to_html(classes="data-table", border=0, index=False)
+
+        # Breakdown by site type
+        widget_all = pd.concat([
+            widget_views.assign(_event_type="view"),
+            widget_clicks.assign(_event_type="click"),
+        ])
+        areg_domains = {"www.bikereg.com", "www.runreg.com", "www.skireg.com", "www.trireg.com"}
+        editorial_domains = {"www.skimag.com", "cdn.skimag.com", "www.outsideonline.com"}
+        site_rows = []
+        for label, domain_set in [("AREG Sites", areg_domains), ("Editorial Sites", editorial_domains)]:
+            subset = widget_all[widget_all["referring_domain"].isin(domain_set)]
+            for v in ["a", "b"]:
+                sv = subset[subset["variant"] == v]
+                views = int((sv["_event_type"] == "view").sum())
+                clicks = int((sv["_event_type"] == "click").sum())
+                ctr = clicks / views * 100 if views > 0 else 0
+                site_rows.append({"Site Type": label, "Variant": v.upper(), "Views": f"{views:,}", "Clicks": f"{clicks:,}", "CTR": f"{ctr:.3f}%"})
+        site_ab_df = pd.DataFrame(site_rows)
+        site_ab_table = site_ab_df.to_html(classes="data-table", border=0, index=False)
+
+        total_clicks = int(variant_clicks.sum())
+        ab_html = f"""
+<h3>Widget A/B Test: Variant A (Custom Header) vs. Variant B (No Header)</h3>
+<p>The widget has two variants in production. Variant A includes a custom header; Variant B does not.</p>
+<div class="table-wrapper">{ab_table}</div>
+<p style="color: #666666; font-size: 0.9rem; margin-top: 12px;">With only <strong>{total_clicks} total clicks</strong>, these results are <strong>not statistically significant</strong>. Three reasons to be cautious:</p>
+<ol style="color: #555555; font-size: 0.9rem;">
+<li><strong>Heavily skewed traffic split (91:9).</strong> Variant A receives ~91% of all widget views, making a fair comparison difficult.</li>
+<li><strong>AREG sites are 100% Variant A.</strong> Registration sites (BikeReg, RunReg, SkiReg, TriReg) hardcode <code>variant=a</code> in the embed URL. Only editorial sites (SKI Mag, OutsideOnline) run a balanced ~50/50 split.</li>
+<li><strong>Too few clicks to draw conclusions.</strong> Only {total_clicks} clicks across both variants — far below the sample size needed for statistical significance.</li>
+</ol>
+<h4>Breakdown by Site Type</h4>
+<p style="font-size: 0.9rem; color: #555555;">Only editorial sites have a balanced A/B split. AREG sites are entirely Variant A.</p>
+<div class="table-wrapper">{site_ab_table}</div>
+"""
+
+    # -----------------------------------------------------------------------
     # 5. UTM Performance
     # -----------------------------------------------------------------------
     utm_df = utm_breakdown(df)
@@ -901,9 +954,13 @@ just not identified on the travel site yet.</p>
 <div class="chart-container">{comp_html}</div>
 
 <!-- ============================================================ -->
-<!-- Key Insight #1: Massive Reach, Minimal Conversion -->
+<!-- Key Insight #1: Top Funnel Is Strong -->
 <!-- ============================================================ -->
-<h2>Key Insight #1: Massive Reach, Minimal Conversion</h2>
+<h2>Key Insight #1: Top Funnel Is Strong — Focus Efforts on Widget Engagement</h2>
+
+<div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">Nearly everyone who loads a page sees the widget (99.4%). The drop-off is after: CTR is 0.05% vs. 0.47% industry avg. This should be our highest-leverage optimization area.</p>
+</div>
 
 <h3>Event Summary</h3>
 <div class="chart-container">{events_html}</div>
@@ -922,50 +979,16 @@ just not identified on the travel site yet.</p>
     '<li>A/B test widget headline, CTA copy, and page placement</li><li>Add social proof (e.g., "12 people searched Aspen today")</li>',
 )}</div>
 
-<!-- ============================================================ -->
-<!-- Key Insight #2: Top Traffic from AREG Sites -->
-<!-- ============================================================ -->
-<h2>Key Insight #2: Top Traffic from AREG Sites</h2>
-
-{"<h3>Traffic Volume by UTM Source</h3><p>BikeReg dominates traffic volume. The right panel shows widget clicks on a separate scale -- most sources drive fewer than 10 clicks despite thousands of impressions.</p>" + utm_volume_html if utm_volume_html else ""}
-
-{"<h3>Conversion Rates by UTM Source (Ranked)</h3><p><strong>View Rate</strong> = widget views / page loads (did users scroll to the widget?).<br><strong>Click Rate</strong> = clicks / widget views (of those who saw it, who clicked?).<br><strong>Search Rate</strong> = searches / page loads (search is a separate action from the widget).</p>" + utm_rates_html if utm_rates_html else ""}
-
-{"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Full UTM breakdown table</div><div class='collapsible-content'>" + utm_table_html + "</div>" if utm_table_html else ""}
+{ab_html}
 
 <!-- ============================================================ -->
-<!-- Top Search Destinations -->
+<!-- Key Insight #2: Repeat Anonymous Visitors -->
 <!-- ============================================================ -->
-<h2>Top Search Destinations</h2>
+<h2>Key Insight #2: {repeat_anon:,}+ Repeat Anonymous Visitors Signal Intent</h2>
 
-<h3>Selectable Inventory Destinations</h3>
-<p>These are locations from our selectable inventory, not free-text searches. They indicate which destinations users explore when presented with options.</p>
-{"<div class='chart-container'>" + dest_bar_html + "</div>" if dest_bar_html else "<p>No search destination data.</p>"}
-{"<div class='chart-container'>" + dest_map_html + "</div>" if dest_map_html else ""}
-{"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Search destinations table</div><div class='collapsible-content'>" + dest_table_html + "</div>" if dest_table_html else ""}
-
-<!-- ============================================================ -->
-<!-- Key Insight #3: Location Signals from AREG Event Registrations -->
-<!-- ============================================================ -->
-<h2>Key Insight #3: Location Signals from AREG Event Registrations</h2>
-
-<h3>UTM Term Locations — Where AREG Events Take Place</h3>
-<p>These "Lodging Near ..." terms come from users who registered for marathons, cycling races, or ski events on AREG sites. The locations reflect where those events take place — a strong signal for where to target lodging campaigns.</p>
-{"<div class='chart-container'>" + utm_terms_bar_html + "</div>" if utm_terms_bar_html else "<p>No UTM terms found in this date range.</p>"}
-{"<div class='collapsible-header' onclick='toggleCollapsible(this)'>UTM terms table</div><div class='collapsible-content'>" + utm_terms_table_html + "</div>" if utm_terms_table_html else ""}
-{"<h3>UTM Term Locations Map</h3><p>Geographic distribution of AREG event locations where registrants are being shown the travel widget.</p><div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else ""}
-
-<div style="margin-top:24px;">{strategy_card(
-    "#E6BC00",
-    "Action: Location-Based Campaigns",
-    "UTM term locations reveal where AREG events take place. Target lodging campaigns around these event locations to reach registrants who need accommodation.",
-    '<li><b>Event-adjacent lodging:</b> target AREG registrants with lodging options near their upcoming event location</li><li>Create dedicated landing pages for top event locations</li><li>Run email campaigns with lodging deals timed to event dates</li>',
-)}</div>
-
-<!-- ============================================================ -->
-<!-- Key Insight #4: 2,800+ Repeat Anonymous Users -->
-<!-- ============================================================ -->
-<h2>Key Insight #4: We Have {repeat_anon:,}+ Repeat Anonymous Users!</h2>
+<div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">The bad news: 99.98% of users are anonymous, only {registered_count} registered users engaged with our travel product. The good news: 5.8% ({repeat_anon:,}+) anonymous users come back more than once. We could explore lead magnets or lightweight offers to help this group reveal themselves.</p>
+</div>
 
 <p>Anonymous visitors segmented by engagement level.
 <strong>Repeat visitors who engaged with the widget are our best activation targets.</strong></p>
@@ -987,17 +1010,56 @@ just not identified on the travel site yet.</p>
 </div>
 
 <!-- ============================================================ -->
-<!-- Registered Users (Reference) -->
+<!-- Key Insight #3: Registered Users -->
 <!-- ============================================================ -->
-<h2>Registered Users</h2>
+<h2>Key Insight #3: Article Impressions Are Not an Efficient Way to Reach Registered Users</h2>
+
+<div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">Only {registered_count} registered users showed up in the data. For registered users, a better way to reach mass is through email campaigns since we already have their emails.</p>
+</div>
+
 <p>All registered users (with <code>user_id</code>) who engaged with the travel widget.</p>
 {"<div class='kpi-grid'>" + kpi_card("Registered Users", f"{reg_user_count:,}") + "</div>" + reg_table_html if reg_table_html else "<p>No registered users found in this date range.</p>"}
 
 <div style="margin-top:24px;">{strategy_card(
     "#E6BC00",
-    "Action: Identify Registered Users with Travel Intent",
-    f"Only {reg_user_count} registered users engaged with the travel widget organically. Relying on article traffic alone won't scale. Instead, proactively identify registered users across the Outside ecosystem who show travel intent, and reach them via email campaigns.",
+    "Action: Reach Registered Users via Email Campaigns",
+    f"Only {reg_user_count} registered users engaged with the travel widget organically. Relying on article impressions alone won't scale. Instead, proactively reach registered users across the Outside ecosystem who show travel intent via targeted email campaigns.",
     '<li><b>AREG event registrants:</b> users who registered for marathons, cycling, or ski events — they travel for their sport and need lodging</li><li><b>Travel content readers:</b> Outside editorial subscribers who engage with travel, destination, or adventure articles</li><li><b>Trailforks/Gaia users with saved non-home locations:</b> users who saved trails or regions outside their home area — a strong signal they plan to travel there</li><li><b>Outside+ subscribers:</b> premium members already have a paid relationship with the brand — higher trust and more likely to transact on travel</li>',
+)}</div>
+
+<!-- ============================================================ -->
+<!-- Key Insight #4: AREG Events Locations as North Star -->
+<!-- ============================================================ -->
+<h2>Key Insight #4: AREG Events Locations Can Be Our North Star to Expand Lodge Inventory</h2>
+
+<div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">Our largest traffic source is event registration (BikeReg, RunReg, SkiReg). Having travel options surface to people planning races feels like a natural organic extension. Compare the two maps below — the search destinations map shows our current inventory coverage, while the AREG event locations map shows where events are happening that we don't yet have inventory for.</p>
+</div>
+
+{"<h3>Traffic Volume by UTM Source</h3><p>BikeReg dominates traffic volume. The right panel shows widget clicks on a separate scale -- most sources drive fewer than 10 clicks despite thousands of impressions.</p>" + utm_volume_html if utm_volume_html else ""}
+
+{"<h3>Conversion Rates by UTM Source (Ranked)</h3><p><strong>View Rate</strong> = widget views / page loads (did users scroll to the widget?).<br><strong>Click Rate</strong> = clicks / widget views (of those who saw it, who clicked?).<br><strong>Search Rate</strong> = searches / page loads (search is a separate action from the widget).</p>" + utm_rates_html if utm_rates_html else ""}
+
+{"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Full UTM breakdown table</div><div class='collapsible-content'>" + utm_table_html + "</div>" if utm_table_html else ""}
+
+<h3>Search Destinations — Current Inventory Coverage</h3>
+<p>These are locations from our selectable inventory, not free-text searches. This map represents where we currently have lodging options available.</p>
+{"<div class='chart-container'>" + dest_bar_html + "</div>" if dest_bar_html else "<p>No search destination data.</p>"}
+{"<div class='chart-container'>" + dest_map_html + "</div>" if dest_map_html else ""}
+{"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Search destinations table</div><div class='collapsible-content'>" + dest_table_html + "</div>" if dest_table_html else ""}
+
+<h3>AREG Event Locations — Where We're Missing Inventory</h3>
+<p>These "Lodging Near ..." terms come from users who registered for marathons, cycling races, or ski events on AREG sites. Many of these locations don't have lodging inventory yet — the gaps between the two maps indicate where to add more.</p>
+{"<div class='chart-container'>" + utm_terms_bar_html + "</div>" if utm_terms_bar_html else "<p>No UTM terms found in this date range.</p>"}
+{"<div class='collapsible-header' onclick='toggleCollapsible(this)'>UTM terms table</div><div class='collapsible-content'>" + utm_terms_table_html + "</div>" if utm_terms_table_html else ""}
+{"<h3>AREG Event Locations Map</h3><p>Geographic distribution of AREG event locations. Compare with the search destinations map above to identify inventory gaps.</p><div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else ""}
+
+<div style="margin-top:24px;">{strategy_card(
+    "#E6BC00",
+    "Action: Expand Lodge Inventory to AREG Event Locations",
+    "AREG event locations reveal unmet demand for lodging. Use the coverage gaps between the two maps to prioritize where to add new inventory.",
+    '<li><b>Map the gaps:</b> identify AREG event locations that have no corresponding search destinations in our inventory</li><li><b>Event-adjacent lodging:</b> target AREG registrants with lodging options near their upcoming event location</li><li>Create dedicated landing pages for top event locations</li><li>Prioritize inventory expansion in high-traffic event regions</li>',
 )}</div>
 
 </div><!-- .container -->
