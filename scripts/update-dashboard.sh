@@ -3,7 +3,6 @@ set -euo pipefail
 
 PROJECT_DIR="/Users/wyang/Projects/2026/travel-events-analysis"
 PROFILE="wen_outside"
-DASHBOARD_DAYS=30   # how many days the dashboard covers
 LOG_FILE="$PROJECT_DIR/logs/update-dashboard.log"
 
 # Logging setup (append, with timestamps)
@@ -33,17 +32,13 @@ if [ -d "$CACHE_DIR" ] && ls "$CACHE_DIR"/*.parquet 1>/dev/null 2>&1; then
     FETCH_DAYS=$(( DAYS_SINCE > 2 ? DAYS_SINCE : 2 ))
     echo "Last cached date: $LATEST_CACHE, fetching $FETCH_DAYS days"
 else
-    FETCH_DAYS=$DASHBOARD_DAYS
-    echo "No cache found, fetching full $FETCH_DAYS days"
+    FETCH_DAYS=30
+    echo "No cache found, fetching last $FETCH_DAYS days"
 fi
 
 python -m travel_events load --days "$FETCH_DAYS" --profile "$PROFILE"
 
-# Step 2: Prune cache files older than DASHBOARD_DAYS
-find "$PROJECT_DIR/data/cache" -name "*.parquet" -mtime +${DASHBOARD_DAYS} -delete
-echo "Pruned parquet files older than $DASHBOARD_DAYS days"
-
-# Step 3: Generate HTML
+# Step 2: Generate HTML
 python generate_html.py
 
 # Step 4: Commit & push (skip if nothing changed)
