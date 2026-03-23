@@ -268,6 +268,7 @@ def generate():
         fig_funnel_anon = go.Figure(go.Funnel(
             y=funnel_df["step"], x=funnel_df["anonymous_users"],
             textinfo="value+percent initial",
+            texttemplate="%{value:,} (%{percentInitial})",
             marker_color=COLORS["dark_grey"],
             textfont=dict(size=12),
         ))
@@ -279,6 +280,7 @@ def generate():
         fig_funnel_reg = go.Figure(go.Funnel(
             y=funnel_df["step"], x=funnel_df["registered_users"],
             textinfo="value+percent initial",
+            texttemplate="%{value:,} (%{percentInitial})",
             marker_color=COLORS["primary"],
             textfont=dict(size=12),
         ))
@@ -984,10 +986,10 @@ just not identified on the travel site yet.</p>
 <!-- ============================================================ -->
 <!-- Key Insight #2: Repeat Anonymous Visitors -->
 <!-- ============================================================ -->
-<h2>Key Insight #2: {repeat_anon:,}+ Repeat Anonymous Visitors Signal Intent</h2>
+<h2>Key Insight #2: {len(repeat_engaged):,}+ Repeat Anonymous Visitors Signal Intent</h2>
 
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
-<p style="margin: 0; font-size: 0.95rem; color: #333333;">The bad news: 99.98% of users are anonymous, only {registered_count} registered users engaged with our travel product. The good news: 5.8% ({repeat_anon:,}+) anonymous users come back more than once. We could explore lead magnets or lightweight offers to help this group reveal themselves.</p>
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">The bad news: 99.98% of users are anonymous, only {registered_count} registered users engaged with our travel product. The good news: {repeat_engaged_pct:.1f}% ({len(repeat_engaged):,}+) anonymous users come back more than once. We could explore lead magnets or lightweight offers to help this group reveal themselves.</p>
 </div>
 
 <p>Anonymous visitors segmented by engagement level.
@@ -998,7 +1000,7 @@ just not identified on the travel site yet.</p>
     <div>{strategy_card(
         "#FFD100",
         "Action: Capture Repeat Anonymous Users",
-        f"{repeat_anon:,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
+        f"{len(repeat_engaged):,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
         '<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: "Create an account for exclusive travel deals."</li><li><b>Email capture via lead magnet:</b> Offer destination guides, trip planning checklists, or event travel newsletters gated behind email sign-up.</li>',
     )}</div>
     <div>{strategy_card(

@@ -363,6 +363,7 @@ if not funnel_df.empty:
             y=funnel_df["step"],
             x=funnel_df["anonymous_users"],
             textinfo="value+percent initial",
+            texttemplate="%{value:,} (%{percentInitial})",
             marker_color=COLORS["dark_grey"],
             textfont=dict(size=12),
         ))
@@ -378,6 +379,7 @@ if not funnel_df.empty:
             y=funnel_df["step"],
             x=funnel_df["registered_users"],
             textinfo="value+percent initial",
+            texttemplate="%{value:,} (%{percentInitial})",
             marker_color=COLORS["primary"],
             textfont=dict(size=12),
         ))
