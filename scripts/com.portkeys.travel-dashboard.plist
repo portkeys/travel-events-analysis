@@ -9,8 +9,13 @@
         <string>/bin/bash</string>
         <string>/Users/wyang/Projects/2026/travel-events-analysis/scripts/update-dashboard.sh</string>
     </array>
-    <key>StartInterval</key>
-    <integer>86400</integer>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
     <key>RunAtLoad</key>
     <true/>
     <key>EnvironmentVariables</key>
