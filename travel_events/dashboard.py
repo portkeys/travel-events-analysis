@@ -412,7 +412,7 @@ if not utm_df.empty:
 
     # --- Volume charts: impressions/views and widget clicks ---
     # Searches excluded from this chart — they only happen on the direct travel site
-    # (not on sister sites), so comparing them side-by-side with clicks is misleading.
+    # (not on other Outside ecosystem sites), so comparing them side-by-side with clicks is misleading.
     st.subheader("Traffic Volume by UTM Source")
     st.markdown("Page loads & widget views (left) vs. widget clicks (right) — separate scales so low-volume clicks are visible.")
 
@@ -901,7 +901,7 @@ with col_s1:
     st.markdown(_STRATEGY_CARD_CSS.format(
         color="#FFD100",
         title="Capture Repeat Anonymous Users",
-        description=f"{repeat_anon:,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
+        description=f"{repeat_anon:,} users returned multiple times without registering. Many are already known on other Outside ecosystem sites (BikeReg, SkiReg). Give them a reason to share their email.",
         items="<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: &quot;Create an account for exclusive travel deals.&quot;</li><li><b>Email capture via content:</b> Offer trip planning checklists, packing guides, or destination newsletters in exchange for email sign-up.</li>",
     ), unsafe_allow_html=True)
 
@@ -928,5 +928,5 @@ with col_s4:
         color="#333333",
         title="Cross-Site Identity Resolution",
         description="Most repeat anonymous users come from BikeReg and SkiReg where they may already be registered. Stitch identities to unlock email-addressable audiences.",
-        items="<li>Investigate RudderStack Profiles to merge anonymous_id with sister site registrations</li><li>Cross-reference AREG user databases (BikeReg, SkiReg, RunReg, TriReg) with travel widget impression data</li>",
+        items="<li>Investigate RudderStack Profiles to merge anonymous_id with Outside ecosystem registrations</li><li>Cross-reference AREG user databases (BikeReg, SkiReg, RunReg, TriReg) with travel widget impression data</li>",
     ), unsafe_allow_html=True)

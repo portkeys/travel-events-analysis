@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Analytics project for Outside Travel's embed widget events. Data flows from RudderStack → S3 (gzipped JSON) → local Parquet cache → analysis/dashboards. The project tracks user engagement with a travel booking widget embedded on Outside's sister sites (BikeReg, SkiReg, RunReg, TriReg, SKI Magazine).
+Analytics project for Outside Travel's embed widget events. Data flows from RudderStack → S3 (gzipped JSON) → local Parquet cache → analysis/dashboards. The project tracks user engagement with a travel booking widget embedded on the Outside ecosystem (BikeReg, SkiReg, RunReg, TriReg, SKI Magazine).
 
 ## Key Commands
 
@@ -47,4 +47,4 @@ Outside brand palette: signature yellow `#FFD100`, black, and grays. The `COLORS
 
 - The `data/` directory is gitignored — Parquet cache and CSVs must be generated locally via the `load` command
 - Event funnel steps: Loaded a Page → Embed Widget Viewed → Embed Widget Clicked → Travel Searched → Property Added to Cart → Checkout Clicked
-- Sister site referrer domains are normalized to short names (e.g., `www.bikereg.com` → `BikeReg`) in both `analysis.py` and `dashboard.py`
+- Ecosystem site referrer domains are normalized to short names (e.g., `www.bikereg.com` → `BikeReg`) in both `analysis.py` and `dashboard.py`

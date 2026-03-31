@@ -190,9 +190,9 @@ def generate():
 
     kpi_row1 = "".join([
         kpi_card("Total Events", f"{len(df):,}"),
-        kpi_card("Unique Users", f"{total_unique:,}"),
-        kpi_card("Registered Users", f"{registered_count:,}"),
-        kpi_card("Anonymous Users", f"{anon_count:,}"),
+        kpi_card("Unique Users <span class='iframe-impact'>&#9888; iframe impact</span>", f"{total_unique:,}"),
+        kpi_card("Registered Users <span class='iframe-impact'>&#9888; iframe impact</span>", f"{registered_count:,}"),
+        kpi_card("Anonymous Users <span class='iframe-impact'>&#9888; iframe impact</span>", f"{anon_count:,}"),
     ])
 
     # -----------------------------------------------------------------------
@@ -629,10 +629,10 @@ def generate():
 
         # KPI row
         anon_kpi_row = "".join([
-            kpi_card("Total Engaged Anonymous", f"{len(anon_viewers):,}"),
-            kpi_card("Repeat Visitors (2+ sessions)", f"{len(repeat_engaged):,}"),
-            kpi_card("Single-Visit Engaged", f"{len(single_engaged):,}"),
-            kpi_card("Repeat Engaged Rate", f"{repeat_engaged_pct:.1f}%"),
+            kpi_card("Total Engaged Anonymous <span class='iframe-impact'>&#9888; iframe impact</span>", f"{len(anon_viewers):,}"),
+            kpi_card("Repeat Visitors (2+ sessions) <span class='iframe-impact'>&#9888; iframe impact</span>", f"{len(repeat_engaged):,}"),
+            kpi_card("Single-Visit Engaged <span class='iframe-impact'>&#9888; iframe impact</span>", f"{len(single_engaged):,}"),
+            kpi_card("Repeat Engaged Rate <span class='iframe-impact'>&#9888; iframe impact</span>", f"{repeat_engaged_pct:.1f}%"),
         ])
 
         # Funnel steps chart
@@ -921,6 +921,45 @@ just not identified on the travel site yet.</p>
     .collapsible-content.open {{
         display: block;
     }}
+    /* Data quality / investigation callouts */
+    .investigation-banner {{
+        background: #FFF8E1;
+        border: 2px solid #FFD100;
+        border-radius: 10px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+    }}
+    .investigation-banner h3 {{
+        margin-top: 0;
+        color: #000000;
+        font-size: 1.1rem;
+    }}
+    .investigation-banner ul {{
+        margin-bottom: 0;
+    }}
+    .investigation-finding {{
+        background: #FFFFFF;
+        border-left: 4px solid #FFD100;
+        border-radius: 0 8px 8px 0;
+        padding: 12px 16px;
+        margin: 12px 0;
+        font-size: 0.93rem;
+        color: #333333;
+    }}
+    .investigation-finding .icon {{
+        margin-right: 6px;
+    }}
+    .iframe-impact {{
+        display: inline-block;
+        background: #FFF3B0;
+        color: #666600;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin-left: 8px;
+        vertical-align: middle;
+    }}
     /* Responsive */
     @media (max-width: 900px) {{
         .kpi-grid {{ grid-template-columns: repeat(2, 1fr); }}
@@ -951,18 +990,20 @@ just not identified on the travel site yet.</p>
 
 <div class="kpi-grid">{kpi_row1}</div>
 
-<h3>User Composition</h3>
+<h3>User Composition <span class="iframe-impact">&#9888; iframe impact</span></h3>
 {"<p><strong>" + f"{repeat_anon:,} repeat anonymous users</strong> visited multiple times without registering -- these represent our best activation opportunity.</p>" if repeat_anon > 0 else ""}
+<div class="investigation-finding">&#128269; <strong>Investigation note:</strong> This breakdown overstates anonymous users and understates registered users. Many users shown as "anonymous" may be logged in on the parent page &mdash; the iframe simply can't see their identity. The postMessage fix will correct this split.</div>
 <div class="chart-container">{comp_html}</div>
 
 <!-- ============================================================ -->
 <!-- Key Insight #1: Top Funnel Is Strong -->
 <!-- ============================================================ -->
-<h2>Key Insight #1: Top Funnel Is Strong — Focus Efforts on Widget Engagement</h2>
+<h2>Key Insight #1: Top Funnel Is Strong &mdash; Focus Efforts on Widget Engagement</h2>
 
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
 <p style="margin: 0; font-size: 0.95rem; color: #333333;">Nearly everyone who loads a page sees the widget (99.4%). The drop-off is after: CTR is 0.05% vs. 0.47% industry avg. This should be our highest-leverage optimization area.</p>
 </div>
+<div class="investigation-finding">&#128269; <strong>Investigation confirmed:</strong> This insight is based on event-count ratios (page loads vs. widget views vs. clicks), not user counts. These metrics are <strong>unaffected</strong> by the iframe identity issue and remain reliable.</div>
 
 <h3>Event Summary</h3>
 <div class="chart-container">{events_html}</div>
@@ -984,13 +1025,29 @@ just not identified on the travel site yet.</p>
 {ab_html}
 
 <!-- ============================================================ -->
+<!-- Investigation: Data Quality -->
+<!-- ============================================================ -->
+<div class="investigation-banner" style="margin-top: 48px;">
+<h3>&#128269; Investigation: Anonymous User Counts Are Inflated</h3>
+<p style="margin-bottom: 10px;">A recent investigation found that the travel widget (iframe) has no access to the parent page's login state. This means:</p>
+<ul>
+<li><strong>Every new browser, device, or cookie-clear creates a new anonymous ID</strong> &mdash; inflating unique user counts.</li>
+<li><strong>Users who are logged in on the parent page still appear as anonymous</strong> &mdash; the iframe can't see their identity.</li>
+<li><strong>RudderStack forwards anonymous IDs without stitching</strong> &mdash; and the anonymous ID never gets paired with a user ID on travel.</li>
+</ul>
+<p style="margin-top: 12px; margin-bottom: 4px;"><strong>Path forward:</strong> Implement the <em>iFrame postMessage</em> pattern &mdash; events fire through the parent window, which already has the user's identity context. This is the same approach used by Piano and will resolve the identity gap.</p>
+<p style="margin-bottom: 0; font-size: 0.88rem; color: #666666;">Metrics marked with <span class="iframe-impact">&#9888; iframe impact</span> are affected by this issue. Ratio-based and trend metrics remain reliable.</p>
+</div>
+
+<!-- ============================================================ -->
 <!-- Key Insight #2: Repeat Anonymous Visitors -->
 <!-- ============================================================ -->
 <h2>Key Insight #2: {len(repeat_engaged):,}+ Repeat Anonymous Visitors Signal Intent</h2>
 
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
-<p style="margin: 0; font-size: 0.95rem; color: #333333;">The bad news: 99.98% of users are anonymous, only {registered_count} registered users engaged with our travel product. The good news: {repeat_engaged_pct:.1f}% ({len(repeat_engaged):,}+) anonymous users come back more than once. We could explore lead magnets or lightweight offers to help this group reveal themselves.</p>
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">{repeat_engaged_pct:.1f}% ({len(repeat_engaged):,}+) anonymous users come back more than once. We could explore lead magnets or lightweight offers to help this group reveal themselves.</p>
 </div>
+<div class="investigation-finding">&#128269; <strong>Investigation note:</strong> The repeat anonymous count shown here is likely <strong>understated</strong>. When a user clears cookies or switches devices, they get a new anonymous ID &mdash; making a real repeat visitor appear as multiple single-visit users. The true number of returning visitors is likely higher than what we can currently detect. This makes the signal <em>stronger</em>, not weaker. <span class="iframe-impact">&#9888; iframe impact</span></div>
 
 <p>Anonymous visitors segmented by engagement level.
 <strong>Repeat visitors who engaged with the widget are our best activation targets.</strong></p>
@@ -1000,35 +1057,44 @@ just not identified on the travel site yet.</p>
     <div>{strategy_card(
         "#FFD100",
         "Action: Capture Repeat Anonymous Users",
-        f"{len(repeat_engaged):,} users returned multiple times without registering. Many are already known on sister sites (BikeReg, SkiReg). Give them a reason to share their email.",
+        f"{len(repeat_engaged):,} users returned multiple times without registering. Many are already known elsewhere in the Outside ecosystem (BikeReg, SkiReg). Give them a reason to share their email.",
         '<li><b>2nd-visit registration nudge:</b> Detect returning visitors and prompt: "Create an account for exclusive travel deals."</li><li><b>Email capture via lead magnet:</b> Offer destination guides, trip planning checklists, or event travel newsletters gated behind email sign-up.</li>',
     )}</div>
     <div>{strategy_card(
         "#333333",
-        "Action: Cross-Site Identity Resolution",
-        "Most repeat anonymous users come from BikeReg and SkiReg where they may already be registered. Stitch identities to unlock email-addressable audiences.",
-        '<li>Investigate RudderStack Profiles to merge anonymous_id with sister site registrations</li><li>Cross-reference AREG user databases (BikeReg, SkiReg, RunReg, TriReg) with travel widget impression data</li>',
+        "Action: Resolve Identity via postMessage",
+        "Most repeat anonymous users come from BikeReg and SkiReg where they may already be logged in on the parent page. The postMessage fix will automatically resolve their identity without backend stitching.",
+        '<li><b>Implement iFrame postMessage:</b> fire events through the parent window so the parent\'s RudderStack picks up the logged-in user identity automatically</li><li><b>Quantify the gap:</b> after the fix ships, compare the repeat anonymous count before and after to measure how many were actually known users</li>',
     )}</div>
 </div>
 
 <!-- ============================================================ -->
 <!-- Key Insight #3: Registered Users -->
 <!-- ============================================================ -->
-<h2>Key Insight #3: Article Impressions Are Not an Efficient Way to Reach Registered Users</h2>
+<h2>Key Insight #3: We Can't Yet Measure the True Impact of Article Impressions</h2>
 
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
-<p style="margin: 0; font-size: 0.95rem; color: #333333;">Only {registered_count} registered users showed up in the data. For registered users, a better way to reach mass is through email campaigns since we already have their emails.</p>
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">Only {registered_count} registered users appear in the data &mdash; but this is a <strong>measurement gap</strong>, not a strategic conclusion. Because the iframe can't see login state on the parent page, users who are logged in on editorial sites (SKI Mag, OutsideOnline) still appear as anonymous in our data.</p>
 </div>
+<div class="investigation-finding">&#128269; <strong>Investigation finding:</strong> The low registered user count is largely an artifact of the iframe identity issue. Once the <strong>postMessage fix</strong> ships, events will fire through the parent window which already has the user's identity. We expect to see significantly more registered user engagement &mdash; and will then be able to measure whether article impressions are actually driving travel interest.</div>
 
-<p>All registered users (with <code>user_id</code>) who engaged with the travel widget.</p>
-{"<div class='kpi-grid'>" + kpi_card("Registered Users", f"{reg_user_count:,}") + "</div>" + reg_table_html if reg_table_html else "<p>No registered users found in this date range.</p>"}
+<p>All registered users (with <code>user_id</code>) currently visible in the data. <span class="iframe-impact">&#9888; iframe impact &mdash; true count is likely higher</span></p>
+{"<div class='kpi-grid'>" + kpi_card("Registered Users (visible) <span class='iframe-impact'>&#9888; iframe impact</span>", f"{reg_user_count:,}") + "</div>" + reg_table_html if reg_table_html else "<p>No registered users found in this date range.</p>"}
 
-<div style="margin-top:24px;">{strategy_card(
-    "#E6BC00",
-    "Action: Reach Registered Users via Email Campaigns",
-    f"Only {reg_user_count} registered users engaged with the travel widget organically. Relying on article impressions alone won't scale. Instead, proactively reach registered users across the Outside ecosystem who show travel intent via targeted email campaigns.",
-    '<li><b>AREG event registrants:</b> users who registered for marathons, cycling, or ski events — they travel for their sport and need lodging</li><li><b>Travel content readers:</b> Outside editorial subscribers who engage with travel, destination, or adventure articles</li><li><b>Trailforks/Gaia users with saved non-home locations:</b> users who saved trails or regions outside their home area — a strong signal they plan to travel there</li><li><b>Outside+ subscribers:</b> premium members already have a paid relationship with the brand — higher trust and more likely to transact on travel</li>',
+<div class="two-col" style="margin-top:24px;">
+    <div>{strategy_card(
+    "#000000",
+    "Action: Implement postMessage Fix to Unlock Measurement",
+    "The iframe identity gap prevents us from knowing how many registered users actually engage with the travel widget. Fixing this is the prerequisite to measuring article impression effectiveness.",
+    '<li><b>Implement iFrame postMessage pattern:</b> fire events through the parent window so logged-in users are identified automatically</li><li><b>Align with Piano convention:</b> use <code>outside-track</code> event name for forward-compatibility with Piano\'s headless mode</li><li><b>Measure before &amp; after:</b> compare registered user counts pre- and post-fix to quantify the measurement gap</li>',
 )}</div>
+    <div>{strategy_card(
+    "#E6BC00",
+    "Action: Complement with Email Campaigns",
+    "While we work on the postMessage fix, email campaigns remain a reliable way to reach registered users with travel offers &mdash; especially audiences with strong travel intent signals.",
+    '<li><b>AREG event registrants:</b> users who registered for marathons, cycling, or ski events &mdash; they travel for their sport and need lodging</li><li><b>Travel content readers:</b> Outside editorial subscribers who engage with travel, destination, or adventure articles</li><li><b>Trailforks/Gaia users with saved non-home locations:</b> users who saved trails or regions outside their home area</li><li><b>Outside+ subscribers:</b> premium members with a paid relationship and higher trust</li>',
+)}</div>
+</div>
 
 <!-- ============================================================ -->
 <!-- Key Insight #4: AREG Events Locations as North Star -->
@@ -1036,8 +1102,9 @@ just not identified on the travel site yet.</p>
 <h2>Key Insight #4: AREG Events Locations Can Be Our North Star to Expand Lodge Inventory</h2>
 
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
-<p style="margin: 0; font-size: 0.95rem; color: #333333;">Our largest traffic source is event registration (BikeReg, RunReg, SkiReg). Having travel options surface to people planning races feels like a natural organic extension. Compare the two maps below — the search destinations map shows our current inventory coverage, while the AREG event locations map shows where events are happening that we don't yet have inventory for.</p>
+<p style="margin: 0; font-size: 0.95rem; color: #333333;">Our largest traffic source is event registration (BikeReg, RunReg, SkiReg). Having travel options surface to people planning races feels like a natural organic extension. Compare the two maps below &mdash; the search destinations map shows our current inventory coverage, while the AREG event locations map shows where events are happening that we don't yet have inventory for.</p>
 </div>
+<div class="investigation-finding">&#128269; <strong>Investigation confirmed:</strong> This insight is based entirely on event-level data (search terms, UTM terms, geographic locations) and is <strong>unaffected</strong> by the iframe identity issue.</div>
 
 {"<h3>Traffic Volume by UTM Source</h3><p>BikeReg dominates traffic volume. The right panel shows widget clicks on a separate scale -- most sources drive fewer than 10 clicks despite thousands of impressions.</p>" + utm_volume_html if utm_volume_html else ""}
 
