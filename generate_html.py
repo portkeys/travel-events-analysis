@@ -1047,7 +1047,7 @@ just not identified on the travel site yet.</p>
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
 <p style="margin: 0; font-size: 0.95rem; color: #333333;">{repeat_engaged_pct:.1f}% ({len(repeat_engaged):,}+) anonymous users come back more than once. We could explore lead magnets or lightweight offers to help this group reveal themselves.</p>
 </div>
-<div class="investigation-finding">&#128269; <strong>Investigation note:</strong> The repeat anonymous count shown here is likely <strong>understated</strong>. When a user clears cookies or switches devices, they get a new anonymous ID &mdash; making a real repeat visitor appear as multiple single-visit users. The true number of returning visitors is likely higher than what we can currently detect. This makes the signal <em>stronger</em>, not weaker. <span class="iframe-impact">&#9888; iframe impact</span></div>
+<div class="investigation-finding">&#128269; <strong>Investigation note:</strong> Because of the iframe identity issue, we can't say how many real people this represents. Some of these anonymous IDs could be the same person with different cookies, and some could be registered users who just appear anonymous to us. <span class="iframe-impact">&#9888; iframe impact</span></div>
 
 <p>Anonymous visitors segmented by engagement level.
 <strong>Repeat visitors who engaged with the widget are our best activation targets.</strong></p>
