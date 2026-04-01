@@ -1003,7 +1003,7 @@ just not identified on the travel site yet.</p>
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
 <p style="margin: 0; font-size: 0.95rem; color: #333333;">Nearly everyone who loads a page sees the widget (99.4%). The drop-off is after: CTR is 0.05% vs. 0.47% industry avg. This should be our highest-leverage optimization area.</p>
 </div>
-<div class="investigation-finding">&#128269; <strong>Investigation confirmed:</strong> This insight is based on event-count ratios (page loads vs. widget views vs. clicks), not user counts. These metrics are <strong>unaffected</strong> by the iframe identity issue and remain reliable.</div>
+<div class="investigation-finding">&#128269; <strong>Investigation note:</strong> This insight is based on event-count ratios (page loads vs. widget views vs. clicks), not user counts. These metrics are <strong>unaffected</strong> by the iframe identity issue and remain reliable.</div>
 
 <h3>Event Summary</h3>
 <div class="chart-container">{events_html}</div>
@@ -1018,7 +1018,7 @@ just not identified on the travel site yet.</p>
 <div style="margin-top:24px;">{strategy_card(
     "#000000",
     "Action: Optimize the Widget CTR",
-    "Widget CTR is 0.05% vs. 0.47% travel industry average. Even small improvements at 60K+ views would have outsized impact.",
+    "Widget CTR is 0.05% vs. 0.47% travel industry average. Even small improvements at this volume would have outsized impact.",
     '<li>A/B test widget headline, CTA copy, and page placement</li><li>Add social proof (e.g., "12 people searched Aspen today")</li>',
 )}</div>
 
@@ -1104,7 +1104,7 @@ just not identified on the travel site yet.</p>
 <div style="background: #FFFDE6; border-left: 4px solid {COLORS['primary']}; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
 <p style="margin: 0; font-size: 0.95rem; color: #333333;">Our largest traffic source is event registration (BikeReg, RunReg, SkiReg). Having travel options surface to people planning races feels like a natural organic extension. Compare the two maps below &mdash; the search destinations map shows our current inventory coverage, while the AREG event locations map shows where events are happening that we don't yet have inventory for.</p>
 </div>
-<div class="investigation-finding">&#128269; <strong>Investigation confirmed:</strong> This insight is based entirely on event-level data (search terms, UTM terms, geographic locations) and is <strong>unaffected</strong> by the iframe identity issue.</div>
+<div class="investigation-finding">&#128269; <strong>Investigation note:</strong> This insight is based entirely on event-level data (search terms, UTM terms, geographic locations) and is <strong>unaffected</strong> by the iframe identity issue.</div>
 
 {"<h3>Traffic Volume by UTM Source</h3><p>BikeReg dominates traffic volume. The right panel shows widget clicks on a separate scale -- most sources drive fewer than 10 clicks despite thousands of impressions.</p>" + utm_volume_html if utm_volume_html else ""}
 
@@ -1115,14 +1115,19 @@ just not identified on the travel site yet.</p>
 <h3>Search Destinations — Current Inventory Coverage</h3>
 <p>These are locations from our selectable inventory, not free-text searches. This map represents where we currently have lodging options available.</p>
 {"<div class='chart-container'>" + dest_bar_html + "</div>" if dest_bar_html else "<p>No search destination data.</p>"}
-{"<div class='chart-container'>" + dest_map_html + "</div>" if dest_map_html else ""}
 {"<div class='collapsible-header' onclick='toggleCollapsible(this)'>Search destinations table</div><div class='collapsible-content'>" + dest_table_html + "</div>" if dest_table_html else ""}
 
 <h3>AREG Event Locations — Where We're Missing Inventory</h3>
 <p>These "Lodging Near ..." terms come from users who registered for marathons, cycling races, or ski events on AREG sites. Many of these locations don't have lodging inventory yet — the gaps between the two maps indicate where to add more.</p>
 {"<div class='chart-container'>" + utm_terms_bar_html + "</div>" if utm_terms_bar_html else "<p>No UTM terms found in this date range.</p>"}
 {"<div class='collapsible-header' onclick='toggleCollapsible(this)'>UTM terms table</div><div class='collapsible-content'>" + utm_terms_table_html + "</div>" if utm_terms_table_html else ""}
-{"<h3>AREG Event Locations Map</h3><p>Geographic distribution of AREG event locations. Compare with the search destinations map above to identify inventory gaps.</p><div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else ""}
+
+<h3>Map Comparison: Current Inventory vs. AREG Event Locations</h3>
+<p>Left: where we currently have lodging inventory (search destinations). Right: where AREG events are happening. The gaps between the two maps show where to expand inventory.</p>
+<div class="two-col">
+    <div>{"<div class='chart-container'>" + dest_map_html + "</div>" if dest_map_html else "<p>No search destination map data.</p>"}</div>
+    <div>{"<div class='chart-container'>" + utm_terms_map_html + "</div>" if utm_terms_map_html else "<p>No AREG event location map data.</p>"}</div>
+</div>
 
 <div style="margin-top:24px;">{strategy_card(
     "#E6BC00",
